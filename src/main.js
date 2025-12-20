@@ -5,12 +5,12 @@
  * @returns {number}
  */
 function calculateSimpleRevenue(purchase, _product) {
-   // @TODO: Расчет выручки от операции
-   const { discount, sale_price, quantity } = purchase;
-   const discountMultiplier = 1 - (discount / 100);
-    const revenue = sale_price * quantity * discountMultiplier;
-    
-    return revenue;
+  // @TODO: Расчет выручки от операции
+  const { discount, sale_price, quantity } = purchase;
+  const discountMultiplier = 1 - discount / 100;
+  const revenue = sale_price * quantity * discountMultiplier;
+
+  return revenue;
 }
 
 /**
@@ -21,17 +21,17 @@ function calculateSimpleRevenue(purchase, _product) {
  * @returns {number}
  */
 function calculateBonusByProfit(index, total, seller) {
-     const { profit } = seller;
-    // @TODO: Расчет бонуса от позиции в рейтинге
-    if (index===0){
-        return profit*0.15;
-    }else if (index===1 || index===2){
-        return profit*0.1
-    }else if (index===total-1){
-        return 0
-    }else {
-        return profit*0.05
-    }
+  const { profit } = seller;
+  // @TODO: Расчет бонуса от позиции в рейтинге
+  if (index === 0) {
+    return profit * 0.15;
+  } else if (index === 1 || index === 2) {
+    return profit * 0.1;
+  } else if (index === total - 1) {
+    return 0;
+  } else {
+    return profit * 0.05;
+  }
 }
 
 /**
@@ -41,19 +41,79 @@ function calculateBonusByProfit(index, total, seller) {
  * @returns {{revenue, top_products, bonus, name, sales_count, profit, seller_id}[]}
  */
 function analyzeSalesData(data, options) {
-    // @TODO: Проверка входных данных
- const { calculateRevenue, calculateBonus } = options;
-    // @TODO: Проверка наличия опций
+  if (
+    !data ||
+    !Array.isArray(data.sellers) ||
+    data.sellers.length === 0 ||
+    !Array.isArray(data.products) ||
+    data.products.length === 0 ||
+    !Array.isArray(data.purchase_records) ||
+    data.purchase_records.length === 0
+  ) {
+    throw new Error("Некорректные входные данные");
+  }
+  // @TODO: Проверка входных данных
 
-    // @TODO: Подготовка промежуточных данных для сбора статистики
+  const { calculateRevenue, calculateBonus } = options;
+  if (!calculateRevenue || !calculateBonus) {
+    throw new Error("Отсутствуют необходимые функции для расчетов");
+  }
+  // @TODO: Проверка наличия опций
 
-    // @TODO: Индексация продавцов и товаров для быстрого доступа
+const SellerStats= data.sellers.map (seller => {
+    return {
+        id: seller.id,
+        name: `${seller.first_name} ${seller.last_name}`,
+        revenue: 0,
+        profit: 0,
+        sales_count: 0,
+        products_sold: {}
+    }
+})
+  // @TODO: Подготовка промежуточных данных для сбора статистики
 
-    // @TODO: Расчет выручки и прибыли для каждого продавца
+const sellerIndex = {};
+    SellerStats.forEach(seller => {
+        sellerIndex[seller.id] = seller;
+    });
+const productIndex = {};
+    data.products.forEach(product =>{
+        productIndex [product.sku]=product;
+    })
+  // @TODO: Индексация продавцов и товаров для быстрого доступа
 
-    // @TODO: Сортировка продавцов по прибыли
 
-    // @TODO: Назначение премий на основе ранжирования
+  // @TODO: Расчет выручки и прибыли для каждого продавца
+data.purchase_records.forEach(record => {
+    const seller = sellerIndex[record.seller_id];
+    if (!seller) return;
+    seller.sales_count += 1;
 
-    // @TODO: Подготовка итоговой коллекции с нужными полями
-}
+record.items.forEach(item => {
+            const product = productIndex[item.sku];
+            
+            if (!product) return;
+           
+            const cost = product.purchase_price * item.quantity;
+        
+            const revenue = calculateRevenue(item, product);
+            const profit = revenue - cost;
+        
+            seller.revenue += revenue;
+            seller.profit += profit;
+            
+            if (!seller.products_sold[item.sku]) {
+                seller.products_sold[item.sku] = 0;
+            }
+            seller.products_sold[item.sku] += item.quantity;
+        });
+    });
+
+
+  // @TODO: Сортировка продавцов по прибыли
+
+
+  // @TODO: Назначение премий на основе ранжирования
+
+
+  // @TODO: Подготовка итоговой коллекции с нужными полями.
