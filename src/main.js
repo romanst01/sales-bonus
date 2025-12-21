@@ -5,9 +5,11 @@
  * @returns {number}
  */
 function calculateSimpleRevenue(purchase, _product) {
-  const { sale_price, quantity, discount = 0 } = purchase;
-  const discountMultiplier = 1 - (discount / 100);
+  // @TODO: Расчет выручки от операции
+  const { discount, sale_price, quantity } = purchase;
+  const discountMultiplier = 1 - discount / 100;
   const revenue = sale_price * quantity * discountMultiplier;
+
   return revenue;
 }
 
@@ -20,6 +22,7 @@ function calculateSimpleRevenue(purchase, _product) {
  */
 function calculateBonusByProfit(index, total, seller) {
   const { profit } = seller;
+  // @TODO: Расчет бонуса от позиции в рейтинге
   if (index === 0) {
     return profit * 0.15;
   } else if (index === 1 || index === 2) {
@@ -49,11 +52,13 @@ function analyzeSalesData(data, options) {
   ) {
     throw new Error("Некорректные входные данные");
   }
+  // @TODO: Проверка входных данных
 
   const { calculateRevenue, calculateBonus } = options;
   if (!calculateRevenue || !calculateBonus) {
     throw new Error("Отсутствуют необходимые функции для расчетов");
   }
+  // @TODO: Проверка наличия опций
 
   const sellerStats = data.sellers.map((seller) => {
     return {
@@ -65,55 +70,30 @@ function analyzeSalesData(data, options) {
       products_sold: {},
     };
   });
+  // @TODO: Подготовка промежуточных данных для сбора статистики
 
   const sellerIndex = {};
   sellerStats.forEach((seller) => {
     sellerIndex[seller.id] = seller;
   });
-  
   const productIndex = {};
   data.products.forEach((product) => {
     productIndex[product.sku] = product;
   });
+  // @TODO: Индексация продавцов и товаров для быстрого доступа
 
-  // Расчет выручки и прибыли для каждого продавца
+  // @TODO: Расчет выручки и прибыли для каждого продавца
   data.purchase_records.forEach((record) => {
     const seller = sellerIndex[record.seller_id];
     if (!seller) return;
-    
     seller.sales_count += 1;
+    seller.revenue += record.total_amount;
 
-    // 1. Считаем общую сумму товаров в чеке С УЧЕТОМ ИНДИВИДУАЛЬНЫХ СКИДОК
-    let totalItemsAmountWithDiscount = 0;
-    const itemsData = [];
-    
     record.items.forEach((item) => {
       const product = productIndex[item.sku];
       if (!product) return;
-      
-      // Сумма товара С УЧЕТОМ индивидуальной скидки
-      const itemAmountWithDiscount = calculateRevenue(item, product);
-      totalItemsAmountWithDiscount += itemAmountWithDiscount;
-      
-      itemsData.push({
-        item,
-        product,
-        itemAmountWithDiscount
-      });
-    });
-    
-    // 2. Распределяем общую скидку по чеку
-    itemsData.forEach(({ item, product, itemAmountWithDiscount }) => {
-      // Доля товара в чеке (с учетом его индивидуальной скидки)
-      const itemShare = itemAmountWithDiscount / totalItemsAmountWithDiscount;
-      
-      // Часть общей скидки для этого товара
-      const itemTotalDiscount = record.total_discount * itemShare;
-      
-      // Финальная выручка = сумма с индивид. скидкой - доля общей скидки
-      const revenue = itemAmountWithDiscount - itemTotalDiscount;
-      
       const cost = product.purchase_price * item.quantity;
+      const revenue = calculateRevenue(item, product);
       const profit = revenue - cost;
 
       seller.revenue += revenue;
@@ -126,10 +106,10 @@ function analyzeSalesData(data, options) {
     });
   });
 
-  // Сортировка продавцов по прибыли
+  // @TODO: Сортировка продавцов по прибыли
   sellerStats.sort((a, b) => b.profit - a.profit);
 
-  // Назначение премий на основе ранжирования
+  // @TODO: Назначение премий на основе ранжирования
   const sellerSort = sellerStats.length;
   sellerStats.forEach((seller, index) => {
     seller.bonus = calculateBonus(index, sellerSort, seller);
@@ -142,7 +122,7 @@ function analyzeSalesData(data, options) {
     seller.top_products = productsArray;
   });
 
-  // Подготовка итоговой коллекции с нужными полями
+  // @TODO: Подготовка итоговой коллекции с нужными полями.
   return sellerStats.map((seller) => ({
     seller_id: seller.id,
     name: seller.name,
