@@ -5,8 +5,9 @@
  * @returns {number}
  */
 function calculateSimpleRevenue(purchase, _product) {
-  const { sale_price, quantity } = purchase;
-  const revenue = sale_price * quantity;
+  const { sale_price, quantity, discount = 0 } = purchase;
+  const discountMultiplier = 1 - (discount / 100);
+  const revenue = sale_price * quantity * discountMultiplier;
   return revenue;
 }
 
@@ -69,7 +70,7 @@ function analyzeSalesData(data, options) {
   sellerStats.forEach((seller) => {
     sellerIndex[seller.id] = seller;
   });
-
+  
   const productIndex = {};
   data.products.forEach((product) => {
     productIndex[product.sku] = product;
@@ -79,39 +80,39 @@ function analyzeSalesData(data, options) {
   data.purchase_records.forEach((record) => {
     const seller = sellerIndex[record.seller_id];
     if (!seller) return;
-
+    
     seller.sales_count += 1;
 
-    // 1. Считаем общую сумму всех товаров в чеке
-    let totalItemsAmount = 0;
+    // 1. Считаем общую сумму товаров в чеке С УЧЕТОМ ИНДИВИДУАЛЬНЫХ СКИДОК
+    let totalItemsAmountWithDiscount = 0;
     const itemsData = [];
-
+    
     record.items.forEach((item) => {
       const product = productIndex[item.sku];
       if (!product) return;
-
-      // Сумма товара БЕЗ скидки
-      const itemAmount = item.sale_price * item.quantity;
-      totalItemsAmount += itemAmount;
-
+      
+      // Сумма товара С УЧЕТОМ индивидуальной скидки
+      const itemAmountWithDiscount = calculateRevenue(item, product);
+      totalItemsAmountWithDiscount += itemAmountWithDiscount;
+      
       itemsData.push({
         item,
         product,
-        itemAmount,
+        itemAmountWithDiscount
       });
     });
-
+    
     // 2. Распределяем общую скидку по чеку
-    itemsData.forEach(({ item, product, itemAmount }) => {
-      // Доля товара в чеке
-      const itemShare = itemAmount / totalItemsAmount;
-
+    itemsData.forEach(({ item, product, itemAmountWithDiscount }) => {
+      // Доля товара в чеке (с учетом его индивидуальной скидки)
+      const itemShare = itemAmountWithDiscount / totalItemsAmountWithDiscount;
+      
       // Часть общей скидки для этого товара
-      const itemDiscount = record.total_discount * itemShare;
-
-      // Выручка с учетом доли общей скидки
-      const revenue = itemAmount - itemDiscount;
-
+      const itemTotalDiscount = record.total_discount * itemShare;
+      
+      // Финальная выручка = сумма с индивид. скидкой - доля общей скидки
+      const revenue = itemAmountWithDiscount - itemTotalDiscount;
+      
       const cost = product.purchase_price * item.quantity;
       const profit = revenue - cost;
 
