@@ -58,7 +58,7 @@ function analyzeSalesData(data, options) {
   }
   // @TODO: Проверка наличия опций
 
-  const sellerStats = data.sellers.map((seller) => ({
+  const sellerStats = data.sellers.map(seller => ({
     seller_id: seller.id,
     name: `${seller.first_name} ${seller.last_name}`,
     revenue: 0,
@@ -69,26 +69,25 @@ function analyzeSalesData(data, options) {
   // @TODO: Подготовка промежуточных данных для сбора статистики
 
   const sellerIndex = Object.fromEntries(
-    sellerStats.map((stat) => [stat.seller_id, stat])
+    sellerStats.map(stat => [stat.seller_id, stat])
   );
-
   const productIndex = Object.fromEntries(
-    data.products.map((product) => [product.sku, product])
+    data.products.map(product => [product.sku, product])
   );
   // @TODO: Индексация продавцов и товаров для быстрого доступа
 
   // @TODO: Расчет выручки и прибыли для каждого продавца
-  data.purchase_records.forEach((record) => {
+  data.purchase_records.forEach(record => {
     const seller = sellerIndex[record.seller_id];
     if (!seller) return;
     seller.sales_count += 1;
     seller.revenue += record.total_amount;
 
-    record.items.forEach((item) => {
+    record.items.forEach(item => {
       const product = productIndex[item.sku];
       if (!product) return;
-      const cost = product.purchase_price * item.quantity;
       const revenue = calculateRevenue(item, product);
+      const cost = product.purchase_price * item.quantity;
       const profit = revenue - cost;
 
       seller.profit += profit;
