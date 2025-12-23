@@ -81,12 +81,13 @@ function analyzeSalesData(data, options) {
     const seller = sellerIndex[record.seller_id];
     if (!seller) return;
     seller.sales_count += 1;
-    seller.revenue += record.total_amount;
+    let revenueFromRecord = 0;
 
     record.items.forEach(item => {
       const product = productIndex[item.sku];
       if (!product) return;
       const revenue = calculateRevenue(item, product);
+      revenueFromRecord += revenue;
       const cost = product.purchase_price * item.quantity;
       const profit = revenue - cost;
 
@@ -97,6 +98,7 @@ function analyzeSalesData(data, options) {
       }
       seller.products_sold[item.sku] += item.quantity;
     });
+    seller.revenue += revenueFromRecord;
   });
 
   // @TODO: Сортировка продавцов по прибыли
