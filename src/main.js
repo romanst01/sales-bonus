@@ -80,29 +80,24 @@ function analyzeSalesData(data, options) {
   data.purchase_records.forEach(record => {
     const seller = sellerIndex[record.seller_id];
     if (!seller) return;
-    
     seller.sales_count += 1;
-    seller.revenue += record.total_amount; // ← ВОТ ЭТА СТРОКА ВАЖНА!
+    seller.revenue += record.total_amount - record.total_discount;
 
     record.items.forEach(item => {
-        const product = productIndex[item.sku];
-        if (!product) return;
-        
-        // 1. Считаем выручку с учетом скидки (только для profit)
-        const revenueWithDiscount = calculateRevenue(item, product);
-        
-        // 2. Считаем себестоимость и прибыль
-        const cost = product.purchase_price * item.quantity;
-        const profit = revenueWithDiscount - cost; // ← Прибыль считается с учетом скидки!
-        seller.profit += profit;
+      const product = productIndex[item.sku];
+      if (!product) return;
+      const revenue = calculateRevenue(item, product);
+      const cost = product.purchase_price * item.quantity;
+      const profit = revenue - cost;
 
-        // 3. Учитываем проданные товары
-        if (!seller.products_sold[item.sku]) {
-            seller.products_sold[item.sku] = 0;
-        }
-        seller.products_sold[item.sku] += item.quantity;
+      seller.profit += profit;
+
+      if (!seller.products_sold[item.sku]) {
+        seller.products_sold[item.sku] = 0;
+      }
+      seller.products_sold[item.sku] += item.quantity;
     });
-});
+  });
 
   // @TODO: Сортировка продавцов по прибыли
   sellerStats.sort((a, b) => b.profit - a.profit);
